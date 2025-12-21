@@ -1,0 +1,50 @@
+#!/usr/bin/expect -f
+set timeout 300
+spawn ssh -o StrictHostKeyChecking=no administrator@155.117.43.210
+expect "password:"
+send "91HALvgNR&\r"
+expect "$ "
+send "sudo -i\r"
+expect {
+    "password" {
+        send "91HALvgNR&\r"
+        expect "# "
+    }
+    "# " {}
+}
+
+# Stop and remove older bot containers
+send "docker stop wati-bot 2>/dev/null; docker rm wati-bot 2>/dev/null\r"
+expect "# "
+
+# Deep clean images to force rebuild
+send "docker rmi wati-bot-sync wati-bot wati-bot-final 2>/dev/null\r"
+expect "# "
+
+# Prepare the final directory
+send "mkdir -p /opt/wati-bot-final\r"
+expect "# "
+send "rm -rf /opt/wati-bot-final/* && cp -r /tmp/wati-bot-sync/. /opt/wati-bot-final/\r"
+expect "# "
+
+# Ensure database exists on host to avoid Docker creating it as a directory
+send "touch /opt/wati-bot-final/database.sqlite\r"
+expect "# "
+
+# Build without cache
+send "cd /opt/wati-bot-final && docker build --no-cache -t wati-bot-final .\r"
+expect "# "
+
+# Run the final container with both KB and DB volume mounts
+send "docker run -d --name wati-bot --restart unless-stopped -p 3000:3000 -v /opt/wati-bot-final/knowledge_base.md:/app/knowledge_base.md -v /opt/wati-bot-final/database.sqlite:/app/database.sqlite wati-bot-final\r"
+expect "# "
+
+send "sleep 5 && docker logs wati-bot 2>&1 | grep 'Dashboard available'\r"
+expect "# "
+
+send "echo 'DEPLOYMENT_V3_COMPLETE'\r"
+expect "# "
+send "exit\r"
+expect "$ "
+send "exit\r"
+expect eof

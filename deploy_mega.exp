@@ -1,0 +1,58 @@
+#!/usr/bin/expect -f
+set timeout 300
+
+# 1. Upload files
+spawn scp -o StrictHostKeyChecking=no server.js dashboard.html database.js ai.js wati.js package.json .env Dockerfile administrator@155.117.43.210:/tmp/
+expect "password:"
+send "91HALvgNR&\r"
+expect eof
+
+# 2. Remote commands
+spawn ssh -o StrictHostKeyChecking=no administrator@155.117.43.210
+expect "password:"
+send "91HALvgNR&\r"
+expect "$ "
+send "sudo -i\r"
+expect {
+    "password" {
+        send "91HALvgNR&\r"
+        expect "# "
+    }
+    "# " {}
+}
+
+# Stop old
+send "docker stop wati-bot 2>/dev/null; docker rm wati-bot 2>/dev/null\r"
+expect "# "
+
+# Prepare directory
+send "mkdir -p /opt/wati-bot-final\r"
+expect "# "
+send "cp /tmp/server.js /tmp/dashboard.html /tmp/database.js /tmp/ai.js /tmp/wati.js /tmp/package.json /tmp/.env /tmp/Dockerfile /opt/wati-bot-final/\r"
+expect "# "
+
+# Clean tmp
+send "rm /tmp/server.js /tmp/dashboard.html /tmp/database.js /tmp/ai.js /tmp/wati.js /tmp/package.json /tmp/.env /tmp/Dockerfile\r"
+expect "# "
+
+# Build
+send "cd /opt/wati-bot-final && docker build -t wati-bot-mega .\r"
+expect "# "
+
+# Run with persistence
+# Mounting excluded_users.json for persistence too
+send "touch /opt/wati-bot-final/excluded_users.json\r"
+expect "# "
+# Ensure DB exists
+send "touch /opt/wati-bot-final/database.sqlite\r"
+expect "# "
+
+send "docker run -d --name wati-bot --restart unless-stopped -p 3000:3000 -v /opt/wati-bot-final/knowledge_base.md:/app/knowledge_base.md -v /opt/wati-bot-final/database.sqlite:/app/database.sqlite -v /opt/wati-bot-final/excluded_users.json:/app/excluded_users.json wati-bot-mega\r"
+expect "# "
+
+send "echo 'MEGA_DEPLOY_COMPLETE'\r"
+expect "# "
+send "exit\r"
+expect "$ "
+send "exit\r"
+expect eof

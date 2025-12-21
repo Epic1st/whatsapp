@@ -1,0 +1,9 @@
+# Ignore sensitive files
+.env
+*.sqlite
+node_modules/
+excluded_users.json
+
+# OS files
+.DS_Store
+*.log

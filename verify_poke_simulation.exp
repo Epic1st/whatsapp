@@ -1,0 +1,37 @@
+#!/usr/bin/expect -f
+set timeout 60
+
+# 1. SSH and Setup
+spawn ssh -o StrictHostKeyChecking=no administrator@155.117.43.210
+expect "password:"
+send "91HALvgNR&\r"
+expect "$ "
+send "sudo -i\r"
+expect {
+    "password" {
+        send "91HALvgNR&\r"
+        expect "# "
+    }
+    "# " {}
+}
+
+# 2. Insert Mock Data (User msg 12 hours ago)
+send "sqlite3 /opt/wati-bot-final/database.sqlite \"INSERT INTO conversations (whatsapp_number, role, content, timestamp) VALUES ('TEST_USER_POKE', 'user', 'I am interested in the premium plan', datetime('now', '-12 hours'));\"\r"
+expect "# "
+
+# 3. Trigger Auto-Poke
+send "curl -X POST http://localhost:3000/api/trigger-poke\r"
+expect "# "
+
+# 4. Check Logs for Success
+send "sleep 2 && docker logs wati-bot --tail 20 2>&1 | grep 'TEST_USER_POKE'\r"
+expect "# "
+
+# 5. Cleanup
+send "sqlite3 /opt/wati-bot-final/database.sqlite \"DELETE FROM conversations WHERE whatsapp_number='TEST_USER_POKE';\"\r"
+expect "# "
+
+send "exit\r"
+expect "$ "
+send "exit\r"
+expect eof

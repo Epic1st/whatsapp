@@ -1,0 +1,20 @@
+#!/usr/bin/expect -f
+set timeout 30
+spawn ssh -o StrictHostKeyChecking=no administrator@155.117.43.210
+expect "password:"
+send "91HALvgNR&\r"
+expect "$ "
+send "sudo -i\r"
+expect {
+    "password" {
+        send "91HALvgNR&\r"
+        expect "# "
+    }
+    "# " {}
+}
+send "docker logs wati-bot --tail 40 2>&1\r"
+expect "# "
+send "exit\r"
+expect "$ "
+send "exit\r"
+expect eof

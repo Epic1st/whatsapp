@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YoForex AI Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0f111a;
+            --bg-panel: #1a1d2d;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent-primary: #3b82f6;
+            --accent-success: #10b981;
+            --accent-danger: #ef4444;
+            --accent-warning: #f59e0b;
+            --chat-user-bg: #1e293b;
+            --chat-ai-bg: #2563eb;
+            --border-color: #2d3748;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            height: 100vh;
+            height: 100dvh;
+            /* Mobile fix */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Header --- */
+        .header {
+            background-color: var(--bg-panel);
+            padding: 0 24px;
+            height: 70px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand i {
+            font-size: 24px;
+            color: var(--accent-primary);
+        }
+
+        .brand h1 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-pill {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-primary);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-success);
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .status-badge.disconnected {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-danger);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: currentColor;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: scale(0.9);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:disabled {
+            background: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .chip {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-primary);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .chip:hover {
+            background: rgba(59, 130, 246, 0.25);
+        }
+
+        /* --- Main Layout --- */
+        /* --- Main Layout --- */
+        .main-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 300px;
+            height: calc(100vh - 70px);
+            /* Fallback */
+            height: calc(100dvh - 70px);
+            /* Mobile fix */
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- Left Sidebar (Clients) --- */
+        .sidebar {
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px 8px 36px;
+            border-radius: 6px;
+            color: white;
+            outline: none;
+            font-size: 13px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .client-list {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+            padding: 12px;
+        }
+
+        .client-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .client-list::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 3px;
+        }
+
+        /* Client Card */
+        .client-card {
+            background: transparent;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .client-card:hover {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: var(--border-color);
+        }
+
+        .client-card.active {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--accent-primary);
+        }
+
+        .client-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .client-number {
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .client-meta {
+            font-size: 11px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--border-color);
+        }
+
+        .status-indicator.paused {
+            background: var(--accent-warning);
+            box-shadow: 0 0 5px var(--accent-warning);
+        }
+
+        /* --- Center (Chat) --- */
+        .chat-area {
+            background: #0b0d14;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            /* Critical for flex scroll */
+            height: 100%;
+        }
+
+        .chat-header {
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-panel);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 65px;
+        }
+
+        .chat-title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .pause-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pause-toggle:hover {
+            border-color: var(--text-secondary);
+        }
+
+        .pause-toggle.active {
+            border-color: var(--accent-warning);
+            color: var(--accent-warning);
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .tab-switcher {
+            display: flex;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px;
+            border-radius: 8px;
+            gap: 4px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--bg-panel);
+            color: var(--text-primary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Message Area */
+        .messages-container {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            min-height: 0;
+            /* Critical for flex scroll */
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .message-bubble {
+            max-width: 65%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-bubble.user {
+            align-self: flex-start;
+            background: var(--chat-user-bg);
+            border-bottom-left-radius: 2px;
+        }
+
+        .message-bubble.assistant {
+            align-self: flex-end;
+            background: var(--chat-ai-bg);
+            border-bottom-right-radius: 2px;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.1);
+        }
+
+        .msg-time {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 6px;
+            text-align: right;
+        }
+
+        /* Reply Input Area */
+        .reply-area {
+            padding: 20px;
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border-color);
+            display: none;
+            gap: 10px;
+        }
+
+        .reply-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 8px;
+            color: white;
+            resize: none;
+            height: 48px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .reply-input:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .send-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .send-btn:hover {
+            background: #2563eb;
+        }
+
+        /* Editor */
+        .editor-container {
+            flex: 1;
+            display: none;
+            padding: 24px;
+            background: #0b0d14;
+            position: relative;
+        }
+
+        .kb-textarea {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            color: #d1d5db;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+        }
+
+        .kb-textarea:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+
+        .save-float-btn {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            z-index: 5;
+        }
+
+        /* --- Right Sidebar (Live Log) --- */
+        .live-panel {
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .live-feed {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .log-item {
+            background: #0f111a;
+            border: 1px solid var(--border-color);
+            border-left: 3px solid var(--accent-primary);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 11px;
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
+        .log-time {
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .log-body {
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .log-reply {
+            color: var(--accent-success);
+            padding-top: 6px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-style: italic;
+        }
+
+        /* --- Loading Overlay --- */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 17, 26, 0.8);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="brand">
+            <i class="fa-brands fa-whatsapp"></i>
+            <div>
+                <h1>YoForex Command Center</h1>
+            </div>
+            <span class="brand-pill">v2.3.0</span>
+        </div>
+
+        <div class="header-actions">
+            <div class="status-badge" id="conn-status">
+                <div class="status-dot"></div>
+                <span>Connecting...</span>
+            </div>
+            <a href="/api/export-all" class="btn-secondary" title="Download ALL chat history as CSV"
+                style="text-decoration:none;">
+                <i class="fa-solid fa-file-csv"></i> Export All
+            </a>
+            <button class="btn-primary" onclick="syncWATI()">
+                <i class="fa-solid fa-rotate"></i> Sync History
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-container">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">
+                    <span>Active Clients</span>
+                    <span id="client-count-badge">0</span>
+                </div>
+                <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="text" id="client-search" placeholder="Search number..." onkeyup="filterClients()">
+                </div>
+            </div>
+            <div class="client-list" id="client-list">
+                <!-- Clients injected here -->
+            </div>
+        </aside>
+
+        <!-- Center Stage -->
+        <main class="chat-area">
+            <div class="chat-header">
+                <div class="chat-title-group" id="chat-header-content">
+                    <div style="color:var(--text-secondary)">Select a client...</div>
+                </div>
+                <div class="actions-group" style="display:flex;gap:8px;">
+                    <button class="btn-secondary" onclick="exportChat()" title="Download CSV">
+                        <i class="fa-solid fa-download"></i>
+                    </button>
+                    <div class="tab-switcher">
+                        <button class="tab-btn active" onclick="switchTab('chat')">Chat</button>
+                        <button class="tab-btn" onclick="switchTab('kb')">Knowledge</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Messages -->
+            <div class="messages-container" id="messages-view">
+                <div class="empty-state">
+                    <i class="fa-regular fa-comments empty-icon"></i>
+                    <h3>No Conversation Selected</h3>
+                    <p>Select a client from the sidebar to view history</p>
+                </div>
+            </div>
+
+            <!-- Manual Reply Input -->
+            <div class="reply-area" id="reply-area" style="display:none; flex-direction:column; gap:8px;">
+                <!-- Templates -->
+                <div class="quick-actions" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;">
+                    <button class="chip" onclick="useTemplate('Price')">💰 Price</button>
+                    <button class="chip" onclick="useTemplate('Welcome')">👋 Welcome</button>
+                    <button class="chip" onclick="useTemplate('Stop')">🛑 Stop AI</button>
+                    <button class="chip" onclick="useTemplate('Links')">🔗 Links</button>
+                </div>
+
+                <div style="display:flex; gap:10px; width:100%;">
+                    <input type="text" class="reply-input" id="manual-msg" placeholder="Type a manual message here..."
+                        onkeydown="if(event.key==='Enter') sendManualMsg()">
+                    <button class="send-btn" onclick="sendManualMsg()">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab: Knowledge Base -->
+            <div class="editor-container" id="kb-view">
+                <textarea class="kb-textarea" id="kb-editor" spellcheck="false"></textarea>
+                <div class="save-float-btn">
+                    <button class="btn-primary" onclick="saveKB()">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Live Feed -->
+        <aside class="live-panel">
+            <div class="sidebar-header">
+                <div class="sidebar-title">
+                    <span>Live Feed</span>
+                    <i class="fa-solid fa-bolt" style="color:var(--accent-warning)"></i>
+                </div>
+            </div>
+            <div class="live-feed" id="live-feed">
+                <!-- Logs injected here -->
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- Sync Loader -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <h3 id="loading-text">Syncing...</h3>
+    </div>
+
+    <script>
+        // State
+        let selectedClient = null;
+        let excludedSet = new Set();
+        let allClients = [];
+        let currentTab = 'chat';
+
+        // --- Init ---
+        async function init() {
+            await Promise.all([loadExcluded(), loadClients(), loadKB()]);
+            connectSSE();
+        }
+
+        // --- API Calls ---
+        async function loadClients() {
+            try {
+                const res = await fetch('/api/conversations');
+                const data = await res.json();
+                allClients = data.conversations || [];
+                renderClients(allClients);
+                document.getElementById('client-count-badge').textContent = allClients.length;
+            } catch (err) { console.error(err); }
+        }
+
+        async function loadExcluded() {
+            try {
+                const res = await fetch('/api/excluded');
+                const data = await res.json();
+                excludedSet = new Set(data.excluded || []);
+            } catch (err) { console.error(err); }
+        }
+
+        async function loadKB() {
+            try {
+                const res = await fetch('/api/kb');
+                const data = await res.json();
+                document.getElementById('kb-editor').value = data.content || '';
+            } catch (err) { console.error(err); }
+        }
+
+        async function loadMessages(waId) {
+            try {
+                const res = await fetch(`/api/messages/${waId}`);
+                const data = await res.json();
+                renderMessages(data.messages || []);
+                document.getElementById('reply-area').style.display = 'flex';
+                updateHeader(waId);
+            } catch (err) { console.error(err); }
+        }
+
+        async function togglePause(waId) {
+            const isPaused = excludedSet.has(waId);
+            try {
+                if (isPaused) {
+                    await fetch(`/api/excluded/${waId}`, { method: 'DELETE' });
+                    excludedSet.delete(waId);
+                } else {
+                    await fetch(`/api/excluded/${waId}`, { method: 'POST' });
+                    excludedSet.add(waId);
+                }
+                updateHeader(waId); // Update toggle visuals
+                loadClients(); // Update sidebar visuals
+            } catch (err) { console.error(err); }
+        }
+
+        async function sendManualMsg() {
+            const input = document.getElementById('manual-msg');
+            const text = input.value.trim();
+            if (!text || !selectedClient) return;
+
+            // Optimistic UI update
+            const tempMsg = { role: 'assistant', content: text, timestamp: new Date() };
+            const container = document.getElementById('messages-view');
+            container.innerHTML += `
+                <div class="message-bubble assistant" style="opacity:0.7">
+                    <div class="msg-content">${escapeHtml(text)}</div>
+                    <div class="msg-time">Sending...</div>
+                </div>`;
+            container.scrollTop = container.scrollHeight;
+            input.value = '';
+
+            try {
+                await fetch('/api/send-message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ waId: selectedClient, text })
+                });
+                loadMessages(selectedClient); // Refresh to confirm
+            } catch (e) { alert('Failed to send'); }
+        }
+
+        async function saveKB() {
+            const content = document.getElementById('kb-editor').value;
+            try {
+                await fetch('/api/kb', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+                alert('Saved!');
+            } catch (err) { alert('Failed'); }
+        }
+
+        async function syncWATI() {
+            showLoading(true);
+            try {
+                const res = await fetch('/api/sync-wati', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ startDate: '2024-01-01' })
+                });
+                const data = await res.json();
+                showLoading(false);
+                if (data.success) {
+                    alert('Sync Complete');
+                    loadClients();
+                } else {
+                    alert('Sync Failed: ' + data.error);
+                }
+            } catch (e) { showLoading(false); alert('Error'); }
+        }
+
+        // --- UI Logic ---
+        function filterClients() {
+            const query = document.getElementById('client-search').value.toLowerCase();
+            const filtered = allClients.filter(c => c.waId.toLowerCase().includes(query));
+            renderClients(filtered);
+        }
+
+        function renderClients(clients) {
+            const list = document.getElementById('client-list');
+            list.innerHTML = clients.map(c => {
+                const isPaused = excludedSet.has(c.waId);
+                const isActive = selectedClient === c.waId;
+                return `
+                <div class="client-card ${isActive ? 'active' : ''}" onclick="selectClient('${c.waId}')">
+                    <div class="client-info">
+                        <div class="client-number">${c.waId}</div>
+                        <div class="client-meta">
+                            <div class="status-indicator ${isPaused ? 'paused' : ''}"></div>
+                            ${isPaused ? 'AI Paused' : 'Active'} • ${c.messageCount} msgs
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function updateHeader(waId) {
+            const isPaused = excludedSet.has(waId);
+            document.getElementById('chat-header-content').innerHTML = `
+                <div class="chat-title">${waId}</div>
+                <button class="pause-toggle ${isPaused ? 'active' : ''}" onclick="togglePause('${waId}')">
+                    <i class="fa-solid fa-${isPaused ? 'play' : 'pause'}"></i>
+                    ${isPaused ? 'Resume AI' : 'Pause AI'}
+                </button>
+            `;
+        }
+
+        function renderMessages(messages) {
+            const container = document.getElementById('messages-view');
+            if (messages.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>No messages found.</p></div>';
+                return;
+            }
+            container.innerHTML = messages.map(m => `
+                <div class="message-bubble ${m.role}">
+                    <div class="msg-content">${escapeHtml(m.content)}</div>
+                    <div class="msg-time">${new Date(m.timestamp).toLocaleString()}</div>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function selectClient(waId) {
+            selectedClient = waId;
+            currentTab = 'chat';
+            switchTab('chat');
+            loadMessages(waId);
+            filterClients(); // Respects current search filter
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('messages-view').style.display = tab === 'chat' ? 'flex' : 'none';
+            document.getElementById('reply-area').style.display = (tab === 'chat' && selectedClient) ? 'flex' : 'none';
+            document.getElementById('kb-view').style.display = tab === 'kb' ? 'block' : 'none';
+        }
+
+        // --- Helpers ---
+        function showLoading(show, text) {
+            const el = document.getElementById('loading-overlay');
+            if (show) {
+                document.getElementById('loading-text').textContent = text;
+                el.style.display = 'flex';
+            } else {
+                el.style.display = 'none';
+            }
+        }
+
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // --- Mega-Pack Features ---
+        function exportChat() {
+            if (!selectedClient) return alert('Select a client first');
+
+            // Get messages from DOM is easiest since we have them rendered
+            // But lets fetch fresh to be clean
+            fetch(`/api/messages/${selectedClient}`)
+                .then(r => r.json())
+                .then(data => {
+                    const rows = [['Date', 'Role', 'Message']];
+                    data.messages.forEach(m => {
+                        rows.push([new Date(m.timestamp).toLocaleString(), m.role, m.content.replace(/"/g, '""')]); // Escape CSV quotes
+                    });
+
+                    const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.map(c => `"${c}"`).join(",")).join("\n");
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement("button"); // Hidden trigger
+                    const a = document.createElement("a");
+                    a.setAttribute("href", encodedUri);
+                    a.setAttribute("download", `chat_${selectedClient}_${new Date().toISOString().slice(0, 10)}.csv`);
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                })
+                .catch(e => alert('Export failed'));
+        }
+
+        function useTemplate(type) {
+            const input = document.getElementById('manual-msg');
+            const templates = {
+                'Price': 'Our Premium EA is available today for just $400. This includes full installation and support. Would you like to proceed?',
+                'Welcome': 'Hello! Welcome to YoForex. How can we help you automate your trading profits today?',
+                'Stop': 'PAUSE_AI_COMMAND', // Internal logic or just text? Let's make it text for now that user can send
+                'Links': 'Check our results here: https://t.me/yoforexbox'
+            };
+
+            if (type === 'Stop') {
+                togglePause(selectedClient);
+                return;
+            }
+
+            input.value = templates[type] || '';
+            input.focus();
+        }
+
+        function connectSSE() {
+            const statusEl = document.getElementById('conn-status');
+            const evtSource = new EventSource('/api/live');
+            evtSource.onopen = () => {
+                statusEl.classList.remove('disconnected');
+                statusEl.innerHTML = '<div class="status-dot"></div><span>Live</span>';
+            };
+            evtSource.onmessage = (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    const feed = document.getElementById('live-feed');
+                    const item = document.createElement('div');
+                    item.className = 'log-item';
+                    item.innerHTML = `
+                        <div class="log-header">
+                            <span>${data.from}</span>
+                            <span style="font-weight:400;color:#666">${new Date().toLocaleTimeString()}</span>
+                        </div>
+                        <div class="log-body">${escapeHtml(data.text)}</div>
+                        <div class="log-reply">→ ${escapeHtml(data.reply)}</div>
+                    `;
+                    feed.insertBefore(item, feed.firstChild);
+                    if (selectedClient === data.from) loadMessages(data.from);
+                } catch (e) { }
+            };
+            evtSource.onerror = () => {
+                statusEl.classList.add('disconnected');
+                statusEl.innerHTML = '<div class="status-dot"></div><span>Reconnecting</span>';
+            };
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

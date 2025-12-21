@@ -1,0 +1,30 @@
+#!/usr/bin/expect -f
+set timeout 60
+spawn scp -o StrictHostKeyChecking=no dashboard.html administrator@155.117.43.210:/tmp/dashboard.html
+expect "password:"
+send "91HALvgNR&\r"
+expect eof
+
+spawn ssh -o StrictHostKeyChecking=no administrator@155.117.43.210
+expect "password:"
+send "91HALvgNR&\r"
+expect "$ "
+send "sudo -i\r"
+expect {
+    "password" {
+        send "91HALvgNR&\r"
+        expect "# "
+    }
+    "# " {}
+}
+# Hot swap the file into the running container
+send "docker cp /tmp/dashboard.html wati-bot:/app/dashboard.html\r"
+expect "# "
+send "rm /tmp/dashboard.html\r"
+expect "# "
+send "echo 'UI_HOT_DEPLOY_COMPLETE'\r"
+expect "# "
+send "exit\r"
+expect "$ "
+send "exit\r"
+expect eof
