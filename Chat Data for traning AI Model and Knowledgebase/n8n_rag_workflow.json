@@ -1,0 +1,153 @@
+{
+    "name": "Knowledge Base RAG Bot",
+    "nodes": [
+        {
+            "parameters": {
+                "path": "webhook",
+                "responseMode": "lastNode",
+                "options": {}
+            },
+            "id": "7d953289-4560-466a-b286-6351d087994e",
+            "name": "WhatsApp Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                460,
+                340
+            ]
+        },
+        {
+            "parameters": {
+                "mode": "retrieve",
+                "query": "={{ $json.body.message }}",
+                "options": {
+                    "limit": 3
+                }
+            },
+            "id": "2768d504-2041-4c12-9c17-06248c8b655f",
+            "name": "Retrieve Context",
+            "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+            "typeVersion": 1,
+            "position": [
+                680,
+                340
+            ],
+            "credentials": {
+                "pineconeApi": {
+                    "id": "YOUR_PINECONE_CREDENTIAL_ID",
+                    "name": "Pinecone account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "modelName": "models/text-embedding-3-small"
+            },
+            "id": "4e73b22e-1510-452f-a653-537449a0222f",
+            "name": "Embeddings OpenAI",
+            "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+            "typeVersion": 1,
+            "position": [
+                680,
+                540
+            ],
+            "credentials": {
+                "openAiApi": {
+                    "id": "YOUR_OPENAI_CREDENTIAL_ID",
+                    "name": "OpenAI account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "model": "gpt-4o",
+                "messages": {
+                    "message": [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful support agent for YoForex Funds. \n\nUse the following CONTEXT from our past chats to answer the user's question. \n\nCONTEXT:\n{{ $json.pageContent }}"
+                        },
+                        {
+                            "role": "user",
+                            "content": "{{ $('WhatsApp Webhook').item.json.body.message }}"
+                        }
+                    ]
+                }
+            },
+            "id": "9982467d-9055-4682-8418-c2901308316c",
+            "name": "AI Agent (GPT-4o)",
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "typeVersion": 1,
+            "position": [
+                900,
+                340
+            ],
+            "credentials": {
+                "openAiApi": {
+                    "id": "YOUR_OPENAI_CREDENTIAL_ID",
+                    "name": "OpenAI account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "text",
+                "responseBody": "={{ $json.text }}"
+            },
+            "id": "c1f72530-9811-4830-bd5b-568328123281",
+            "name": "Respond to WhatsApp",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1120,
+                340
+            ]
+        }
+    ],
+    "connections": {
+        "WhatsApp Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Retrieve Context",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Embeddings OpenAI": {
+            "ai_embedding": [
+                [
+                    {
+                        "node": "Retrieve Context",
+                        "type": "ai_embedding",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Retrieve Context": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent (GPT-4o)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Agent (GPT-4o)": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to WhatsApp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
