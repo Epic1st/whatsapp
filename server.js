@@ -6,6 +6,7 @@ const path = require('path');
 const { initDB, logMessage, getConversationHistory, getAllConversations, getAllMessages, getClientsNeedingPoke } = require('./database');
 const { generateReply } = require('./ai');
 const { sendMessage } = require('./wati');
+const rag = require('./rag');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -133,9 +134,11 @@ app.post('/webhook', async (req, res) => {
                 // 2. Load History (Increased limit for better memory)
                 const history = await getConversationHistory(whatsappNumber, 15);
 
-                // 3. Generate AI Reply
-                const aiReply = await generateReply(text, history);
+                // 3. Generate AI Reply (now returns object with RAG info)
+                const aiResult = await generateReply(text, history);
+                const aiReply = typeof aiResult === 'object' ? aiResult.text : aiResult;
                 console.log('>>> AI Reply for', whatsappNumber, ':', aiReply.substring(0, 50) + '...');
+                if (aiResult.ragUsed) console.log('[RAG] Context used:', aiResult.ragChunks?.length, 'chunks');
 
                 // 4. Log Assistant Reply
                 await logMessage(whatsappNumber, 'assistant', aiReply);
@@ -305,6 +308,61 @@ app.post('/update-kb', (req, res) => {
     if (!content) return res.status(400).send('Content required');
     fs.writeFileSync('./knowledge_base.md', content);
     res.send('Knowledge base updated');
+});
+
+// ========== RAG STATUS ENDPOINT ==========
+app.get('/api/rag-status', (req, res) => {
+    const status = rag.getStatus();
+    res.json(status);
+});
+
+// ========== TEST AI ENDPOINT (for local testing without WATI) ==========
+app.post('/api/test-ai', async (req, res) => {
+    try {
+        const { query, waId = 'test-user', useHistory = false } = req.body;
+        if (!query) return res.status(400).json({ error: 'Query is required' });
+
+        console.log(`[TEST-AI] Query from ${waId}: ${query}`);
+
+        // For testing, use empty history by default to get clean responses
+        // Set useHistory=true in body to use actual history
+        const history = useHistory ? await getConversationHistory(waId, 10) : [];
+
+        // Generate AI reply (now returns object with RAG info)
+        const startTime = Date.now();
+        const aiResult = await generateReply(query, history);
+        const duration = Date.now() - startTime;
+
+        // Handle both old string format and new object format
+        const aiReply = typeof aiResult === 'object' ? aiResult.text : aiResult;
+        const ragUsed = typeof aiResult === 'object' ? aiResult.ragUsed : false;
+        const ragChunks = typeof aiResult === 'object' ? aiResult.ragChunks : [];
+
+        console.log(`[TEST-AI] Reply (${duration}ms): ${aiReply.substring(0, 100)}...`);
+        if (ragUsed) console.log(`[TEST-AI] RAG context used: ${ragChunks.length} chunks`);
+
+        // Don't log test messages to avoid polluting conversation history
+        // Real webhook messages will still be logged
+
+        // Broadcast to dashboard (for live feed)
+        const liveData = JSON.stringify({ from: waId, text: query, reply: aiReply });
+        sseClients.forEach(client => {
+            try { client.res.write(`data: ${liveData}\n\n`); } catch (e) { }
+        });
+
+        res.json({
+            success: true,
+            query,
+            reply: aiReply,
+            duration: `${duration}ms`,
+            model: process.env.OPENROUTER_MODEL || 'google/gemini-pro',
+            ragUsed,
+            ragChunks
+        });
+    } catch (error) {
+        console.error('[TEST-AI] Error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // ========== WATI CHAT SYNC ==========

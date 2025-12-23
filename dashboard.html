@@ -693,6 +693,7 @@
                     </button>
                     <div class="tab-switcher">
                         <button class="tab-btn active" onclick="switchTab('chat')">Chat</button>
+                        <button class="tab-btn" onclick="switchTab('test')">🧪 Test AI</button>
                         <button class="tab-btn" onclick="switchTab('kb')">Knowledge</button>
                     </div>
                 </div>
@@ -733,6 +734,40 @@
                     <button class="btn-primary" onclick="saveKB()">
                         <i class="fa-solid fa-floppy-disk"></i> Save Changes
                     </button>
+                </div>
+            </div>
+
+            <!-- Tab: Test AI -->
+            <div class="editor-container" id="test-view" style="display:none; flex-direction:column; padding:24px;">
+                <div style="background:var(--bg-panel); border-radius:12px; padding:24px; margin-bottom:20px;">
+                    <h3 style="margin-bottom:16px; color:var(--accent-primary);">🧪 Test AI Responses</h3>
+                    <p style="color:var(--text-secondary); margin-bottom:20px; font-size:13px;">
+                        Test how the AI will respond to customer queries. Messages are logged to "test-user"
+                        conversation.
+                    </p>
+                    <div style="display:flex; gap:12px; margin-bottom:16px;">
+                        <input type="text" id="test-query" class="reply-input"
+                            placeholder="Type a test message (e.g., 'What is the price of your EA?')"
+                            style="flex:1; height:48px;" onkeydown="if(event.key==='Enter') testAI()">
+                        <button class="btn-primary" onclick="testAI()" id="test-btn">
+                            <i class="fa-solid fa-rocket"></i> Test
+                        </button>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="chip" onclick="setTestQuery('What is the price?')">💰 Price</button>
+                        <button class="chip" onclick="setTestQuery('Hello, I want to trade forex')">👋 Hello</button>
+                        <button class="chip" onclick="setTestQuery('How do I pay?')">💳 Payment</button>
+                        <button class="chip" onclick="setTestQuery('Is it profitable?')">📈 Profit</button>
+                        <button class="chip" onclick="setTestQuery('I want a refund')">🔄 Refund</button>
+                    </div>
+                </div>
+
+                <div id="test-result"
+                    style="flex:1; background:var(--bg-panel); border-radius:12px; padding:24px; overflow-y:auto;">
+                    <div style="text-align:center; color:var(--text-secondary); padding:40px;">
+                        <i class="fa-solid fa-flask" style="font-size:48px; margin-bottom:16px; opacity:0.3;"></i>
+                        <p>Send a test message to see the AI response</p>
+                    </div>
                 </div>
             </div>
         </main>
@@ -947,6 +982,88 @@
             document.getElementById('messages-view').style.display = tab === 'chat' ? 'flex' : 'none';
             document.getElementById('reply-area').style.display = (tab === 'chat' && selectedClient) ? 'flex' : 'none';
             document.getElementById('kb-view').style.display = tab === 'kb' ? 'block' : 'none';
+            document.getElementById('test-view').style.display = tab === 'test' ? 'flex' : 'none';
+        }
+
+        // --- Test AI Functions ---
+        function setTestQuery(text) {
+            document.getElementById('test-query').value = text;
+            document.getElementById('test-query').focus();
+        }
+
+        async function testAI() {
+            const input = document.getElementById('test-query');
+            const query = input.value.trim();
+            if (!query) return alert('Please enter a test message');
+
+            const btn = document.getElementById('test-btn');
+            const resultDiv = document.getElementById('test-result');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Thinking...';
+
+            resultDiv.innerHTML = `
+                <div style="padding:20px;">
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+                        <div class="spinner" style="width:24px;height:24px;border-width:2px;"></div>
+                        <span style="color:var(--text-secondary);">AI is thinking...</span>
+                    </div>
+                    <div class="message-bubble user" style="max-width:100%; margin-bottom:12px;">
+                        <strong>Your Query:</strong><br>${escapeHtml(query)}
+                    </div>
+                </div>
+            `;
+
+            try {
+                const res = await fetch('/api/test-ai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div style="padding:20px;">
+                            <div class="message-bubble user" style="max-width:100%; margin-bottom:16px;">
+                                <strong style="color:var(--accent-primary);">📥 Your Query:</strong><br>
+                                ${escapeHtml(data.query)}
+                            </div>
+                            <div class="message-bubble assistant" style="max-width:100%; align-self:stretch;">
+                                <strong style="color:#10b981;">🤖 AI Response:</strong><br>
+                                ${escapeHtml(data.reply)}
+                            </div>
+                            <div style="margin-top:16px; padding:12px; background:rgba(0,0,0,0.2); border-radius:8px; font-size:12px; color:var(--text-secondary);">
+                                <strong>Model:</strong> ${data.model} | <strong>Response Time:</strong> ${data.duration}
+                                ${data.ragUsed ? `<br><span style="color:#10b981;">📚 <strong>RAG Context Used:</strong> ${data.ragChunks?.length || 0} chunks from chat history</span>` : '<br><span style="color:#fbbf24;">⚠️ RAG not used (no relevant chunks found)</span>'}
+                            </div>
+                            ${data.ragChunks && data.ragChunks.length > 0 ? `
+                            <details style="margin-top:12px;">
+                                <summary style="cursor:pointer; color:var(--accent-primary); font-size:12px;">View RAG Context Sources</summary>
+                                <div style="margin-top:8px; padding:12px; background:rgba(0,0,0,0.2); border-radius:8px; font-size:11px;">
+                                    ${data.ragChunks.map(c => `<div style="margin-bottom:8px; padding:8px; background:rgba(0,0,0,0.2); border-radius:4px;"><strong>Source:</strong> ${escapeHtml(c.source.substring(0, 60))}... <span style="color:#10b981;">(Score: ${c.score})</span></div>`).join('')}
+                                </div>
+                            </details>
+                            ` : ''}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div style="padding:20px; color:var(--accent-danger);">
+                            <i class="fa-solid fa-exclamation-triangle"></i> Error: ${escapeHtml(data.error || 'Unknown error')}
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `
+                    <div style="padding:20px; color:var(--accent-danger);">
+                        <i class="fa-solid fa-exclamation-triangle"></i> Network Error: ${escapeHtml(err.message)}
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-rocket"></i> Test';
+            }
         }
 
         // --- Helpers ---
@@ -976,7 +1093,7 @@
 
             // Get messages from DOM is easiest since we have them rendered
             // But lets fetch fresh to be clean
-            fetch(`/api/messages/${selectedClient}`)
+            fetch(`/ api / messages / ${selectedClient} `)
                 .then(r => r.json())
                 .then(data => {
                     const rows = [['Date', 'Role', 'Message']];
@@ -1029,10 +1146,10 @@
                     const item = document.createElement('div');
                     item.className = 'log-item';
                     item.innerHTML = `
-                        <div class="log-header">
+                        < div class="log-header" >
                             <span>${data.from}</span>
                             <span style="font-weight:400;color:#666">${new Date().toLocaleTimeString()}</span>
-                        </div>
+                        </div >
                         <div class="log-body">${escapeHtml(data.text)}</div>
                         <div class="log-reply">→ ${escapeHtml(data.reply)}</div>
                     `;

@@ -1,8 +1,10 @@
-# Ignore sensitive files
+# Ignore sensitive files (Keep SAFETY FIRST)
 .env
-*.sqlite
 node_modules/
-excluded_users.json
+
+# Allowed: *.sqlite, excluded_users.json (User requested remove gitignore, so we track more files)
+# *.sqlite
+# excluded_users.json
 
 # OS files
 .DS_Store

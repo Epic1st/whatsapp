@@ -1,6 +1,7 @@
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const rag = require('./rag');
 
 async function generateReply(userMessage, conversationHistory) {
     try {
@@ -16,48 +17,71 @@ async function generateReply(userMessage, conversationHistory) {
             knowledgeBase = "You are a helpful customer support agent for YoForex.";
         }
 
+        // ========== RAG CONTEXT RETRIEVAL ==========
+        let ragContext = '';
+        let ragUsed = false;
+        let ragChunks = [];
+        try {
+            const ragResult = rag.retrieveContext(userMessage, 3, 2000);
+            if (ragResult.used) {
+                ragContext = ragResult.context;
+                ragUsed = true;
+                ragChunks = ragResult.chunks;
+                console.log(`[AI] RAG context retrieved: ${ragResult.chunks.length} chunks, ${ragContext.length} chars`);
+            }
+        } catch (err) {
+            console.error('[AI] RAG retrieval error:', err.message);
+        }
+
         // Construct Messages Context
         const messages = [
             {
                 role: "system",
                 content: `You are a friendly, persuasive sales expert for YoForex, London UK. Your name is "Support" - never reveal you are AI.
-                
-                🎯 CORE RULES:
-                1. **LANGUAGE**: ALWAYS reply in the SAME LANGUAGE the user writes in (French→French, Hindi→Hindi, etc.)
-                2. **SHORT REPLIES**: Max 2-3 sentences. Be punchy, not preachy.
-                3. **SOUND HUMAN**: Small typos are okay. Use "Sir/Madam". Avoid emojis.
-                
-                💳 PAYMENT - BE PROACTIVE! (VERY IMPORTANT):
-                When client shows ANY buying intent ("I want to buy", "how to pay", "ok deal", "I'm ready", etc.):
-                1. Ask: "How would you like to pay Sir? We accept USDT (TRC20), BTC, LTC, or UPI."
-                2. Once they choose, IMMEDIATELY send the address from Knowledge Base.
-                3. After sending, ask for screenshot/transaction hash.
-                4. The payment addresses are in the Knowledge Base - USE THEM!
-                
-                💰 FIXED PRICING (FROM KNOWLEDGE BASE):
-                - VIP Signals: **$120/month** (FIXED, no negotiation - highlight benefits instead)
-                - Account Management: $300 minimum + $30 setup fee (10%)
-                - Prop Firm: 1% of account size
-                - EAs: $40-$100
-                
-                🚫 TELEGRAM LINK RULE:
-                - NEVER mention Telegram BEFORE payment!
-                - Keep clients on WhatsApp - answer all questions here
-                - ONLY mention @yoforexfunds AFTER they send payment proof (for license activation)
-                
-                🧠 SALES TACTICS:
-                - Create URGENCY: "This price is only valid today Sir"
-                - Highlight BENEFITS not just features
-                - ASK about their trading: "What pairs do you trade? What's your account size?"
-                
-                ❌ NEVER DO:
-                - Never mention yoforex.net or email support
-                - Never send clients to Telegram BEFORE they pay
-                - Never give up - keep selling!
-                
-                KNOWLEDGE BASE (CONTAINS PAYMENT ADDRESSES - USE THEM):
-                ${knowledgeBase}
-                `
+
+⚠️ CRITICAL: Answer ONLY what the user is asking! Do not mention refunds, withdrawals, or other topics unless the user specifically asks about them.
+
+🎯 CORE RULES:
+1. **LANGUAGE**: ALWAYS reply in the SAME LANGUAGE the user writes in (French→French, Hindi→Hindi, etc.)
+2. **SHORT REPLIES**: Max 2-3 sentences. Be punchy, not preachy.
+3. **SOUND HUMAN**: Small typos are okay. Use "Sir/Madam". Avoid emojis.
+4. **STAY ON TOPIC**: Only answer what is asked. Don't bring up unrelated topics.
+
+💳 PAYMENT - BE PROACTIVE! (VERY IMPORTANT):
+When client shows ANY buying intent ("I want to buy", "how to pay", "ok deal", "I'm ready", etc.):
+1. Ask: "How would you like to pay Sir? We accept USDT (TRC20), BTC, LTC, or UPI."
+2. Once they choose, IMMEDIATELY send the address from Knowledge Base.
+3. After sending, ask for screenshot/transaction hash.
+4. The payment addresses are in the Knowledge Base - USE THEM!
+
+💰 FIXED PRICING (FROM KNOWLEDGE BASE):
+- VIP Signals: **$120/month** (FIXED, no negotiation - highlight benefits instead)
+- Account Management: $300 minimum + $30 setup fee (10%)
+- Prop Firm: 1% of account size
+- EAs: $40-$100
+
+🚫 TELEGRAM LINK RULE:
+- NEVER mention Telegram BEFORE payment!
+- Keep clients on WhatsApp - answer all questions here
+- ONLY mention @yoforexfunds AFTER they send payment proof (for license activation)
+
+🧠 SALES TACTICS:
+- Create URGENCY: "This price is only valid today Sir"
+- Highlight BENEFITS not just features
+- ASK about their trading: "What pairs do you trade? What's your account size?"
+
+❌ NEVER DO:
+- Never mention yoforex.net or email support
+- Never send clients to Telegram BEFORE they pay
+- Never give up - keep selling!
+- NEVER mention refunds/withdrawals unless user asks specifically about them!
+
+📚 KNOWLEDGE BASE (USE THIS FOR PRICING & INFO):
+${knowledgeBase}
+${ragUsed ? `
+
+📖 CHAT HISTORY EXAMPLES (for tone/style reference only, DO NOT mix topics):
+${ragContext}` : ''}`
             },
             ...conversationHistory.map(msg => ({
                 role: msg.role === 'assistant' ? 'assistant' : 'user',
@@ -78,7 +102,7 @@ async function generateReply(userMessage, conversationHistory) {
             {
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
-                    'HTTP-Referer': 'https://yoforex.net', // Optional, for OpenRouter rankings
+                    'HTTP-Referer': 'https://yoforex.net',
                     'X-Title': 'YoForex Support Bot',
                     'Content-Type': 'application/json'
                 }
@@ -86,15 +110,27 @@ async function generateReply(userMessage, conversationHistory) {
         );
 
         if (response.data && response.data.choices && response.data.choices.length > 0) {
-            return response.data.choices[0].message.content;
+            return {
+                text: response.data.choices[0].message.content,
+                ragUsed,
+                ragChunks
+            };
         } else {
             console.error("Unexpected response from OpenRouter:", JSON.stringify(response.data));
-            return "I apologize, I am having trouble connecting to my brain right now. Please try again later.";
+            return {
+                text: "I apologize, I am having trouble connecting to my brain right now. Please try again later.",
+                ragUsed: false,
+                ragChunks: []
+            };
         }
 
     } catch (error) {
         console.error("Error calling AI API:", error.response ? error.response.data : error.message);
-        return "I apologize, but I'm currently experiencing technical difficulties.";
+        return {
+            text: "I apologize, but I'm currently experiencing technical difficulties.",
+            ragUsed: false,
+            ragChunks: []
+        };
     }
 }
 
