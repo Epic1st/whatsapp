@@ -86,7 +86,19 @@ async function generateReply(userMessage, conversationHistory, imageUrl = null) 
 
 💰 FIXED PRICING:
 - VIP Signals Full Access: **$189/month** (Negotiable to $150).
-- Manual Signals Only: **$149/month** (Negotiable to $120).
+- Manual VIP Signals Only: **$149/month** (Negotiable to $120).
+
+✅ **AFTER PAYMENT SUCCESS (CRITICAL STEPS):**
+1. **Credentials**: Ask for:
+   - Login ID
+   - Password
+   - Server Name
+2. **Prop Firms**:
+   - Ask: "Which Prop Firm company is this?"
+   - (Internal Thought): Use your knowledge to check their rules (Drawdown, Profit Target). Tell the user you are checking their rules to set up the EA accordingly.
+3. **Contact**: ONLY AFTER payment and details are received, send:
+   - "Please contact our engineer on Telegram for setup: https://t.me/YoForexFunds"
+   - ⚠️ DO NOT share this link before payment!
 Includes EVERYTHING:
 ✅ Dynamic Hedger EA - recovers ALL losses automatically (user never loses!)
 ✅ YoForex AI Pro Subscription - our premium AI trading assistant
