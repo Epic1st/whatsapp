@@ -19,20 +19,27 @@ async function generateReply(userMessage, conversationHistory, imageUrl = null) 
         }
 
         // ========== RAG CONTEXT RETRIEVAL ==========
+        // SKIP RAG if user already has established conversation (prevents topic confusion)
         let ragContext = '';
         let ragUsed = false;
         let ragChunks = [];
-        try {
-            // INCREASED to 100 chunks and 10000 chars per user request for comprehensive context
-            const ragResult = rag.retrieveContext(userMessage, 100, 10000);
-            if (ragResult.used) {
-                ragContext = ragResult.context;
-                ragUsed = true;
-                ragChunks = ragResult.chunks;
-                console.log(`[AI] RAG context retrieved: ${ragResult.chunks.length} chunks, ${ragContext.length} chars`);
+
+        const skipRag = conversationHistory.length >= 3;
+        if (skipRag) {
+            console.log(`[AI] Skipping RAG: conversation history has ${conversationHistory.length} messages (sufficient context)`);
+        } else {
+            try {
+                // Only use RAG for new conversations to provide initial context
+                const ragResult = rag.retrieveContext(userMessage, 5, 2000);
+                if (ragResult.used) {
+                    ragContext = ragResult.context;
+                    ragUsed = true;
+                    ragChunks = ragResult.chunks;
+                    console.log(`[AI] RAG context retrieved: ${ragResult.chunks.length} chunks, ${ragContext.length} chars`);
+                }
+            } catch (err) {
+                console.error('[AI] RAG retrieval error:', err.message);
             }
-        } catch (err) {
-            console.error('[AI] RAG retrieval error:', err.message);
         }
 
         // Construct Messages Context
