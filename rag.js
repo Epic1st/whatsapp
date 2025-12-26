@@ -152,11 +152,41 @@ function retrieveContext(query, topK = 3, maxChars = 2000) {
         });
     }
 
+    // Sanitize context to prevent JSON encoding errors with non-ASCII characters
+    const sanitizedContext = sanitizeForJson(context.trim());
+
     return {
-        context: context.trim(),
+        context: sanitizedContext,
         chunks: usedChunks,
-        used: context.length > 0
+        used: sanitizedContext.length > 0
     };
+}
+
+/**
+ * Sanitize text to prevent JSON encoding errors
+ * Removes or escapes problematic characters that break xAI API parsing
+ */
+function sanitizeForJson(text) {
+    if (!text) return '';
+
+    // Remove null bytes and other control characters that break JSON
+    let sanitized = text
+        .replace(/\u0000/g, '')  // Null bytes
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')  // Control chars except \t\n\r
+        .replace(/\\/g, '\\\\')  // Escape backslashes
+        .replace(/"/g, '\\"');   // Escape quotes
+
+    // Ensure valid UTF-8 by removing incomplete multibyte sequences
+    // This handles broken Unicode escape sequences
+    try {
+        // Test if it's valid by trying to encode/decode
+        sanitized = Buffer.from(sanitized, 'utf8').toString('utf8');
+    } catch (e) {
+        // If encoding fails, remove non-ASCII characters as fallback
+        sanitized = sanitized.replace(/[^\x20-\x7E\n\t\r]/g, '');
+    }
+
+    return sanitized;
 }
 
 // Auto-load on module import
