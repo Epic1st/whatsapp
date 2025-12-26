@@ -95,7 +95,12 @@ For users who DON'T want EA/AI, just want manual signals:
 5. **CREATE URGENCY**: "This is a special once offer Sir, normally we don't negotiate."
 
 📦 OTHER PRODUCTS:
-- Account Management: $300 minimum + $30 setup fee
+
+**ACCOUNT MANAGEMENT (Ask for balance FIRST!):**
+1. ALWAYS ask: "What is your current account balance Sir?"
+2. Balance < $1000 → charge **15% management fee**
+3. Balance >= $1000 → charge **10% management fee**
+
 - Prop Firm: 1% of account size
 - EAs: $40-$100
 
