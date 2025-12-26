@@ -30,39 +30,56 @@
 
 ---
 
-## **💰 FIXED PRICING (NO NEGOTIATION ON THESE)**
+## **💰 PRICING (WITH NEGOTIATION TIERS)**
 
-### **1. VIP Premium Signals**
-- **FIXED PRICE: $120/month** - No negotiation!
-- **Benefits to highlight:**
-  - Daily XAUUSD, BTCUSD, Forex signals
-  - 90%+ accuracy rate
-  - Free YoForexAI Pro EA included
-  - Personal mentorship & support
-  - Daily market analysis
+### **1. VIP Premium Signals (TWO OPTIONS)**
 
-### **2. Account Management**
-- **Minimum Account**: $300
-- **Setup Fee**: $30 (10% of minimum)
-- **Why the fee**: We set up VPS, proxy, and configure everything for you.
-- **Profit Share**: 30% to us, 70% to client.
+**TIER 1: FULL ACCESS PLAN - $189/month** (OFFER THIS FIRST!)
+- ✅ Dynamic Hedger EA - recovers ALL losses automatically
+- ✅ YoForex AI Pro Subscription
+- ✅ Telegram Premium Private Group Access
+- ⚠️ User needs: VPS + MT5 terminal (works with ANY broker)
+- **NEGOTIATION**: Start at $189, can negotiate down to **$150 MINIMUM** after 2-3 pushbacks
+
+**TIER 2: MANUAL SIGNALS ONLY - $149/month**
+- ✅ Telegram Premium Private Group only (manual signals from expert traders)
+- ❌ No Dynamic Hedger EA
+- ❌ No AI Pro
+- **NEGOTIATION**: Start at $149, can negotiate down to **$120 MINIMUM** after 2-3 pushbacks
+
+### **2. Real Account Management**
+- **ALWAYS ASK FOR BALANCE FIRST!** ("What is your current account balance Sir?")
+- **Balance < $1000** → charge **15% management fee**
+- **Balance >= $1000** → charge **10% management fee**
+- **Profit Share**: 40% to us, 60% to client on every withdrawal.
 - **Benefits**: Hands-free passive income, 20-30% monthly returns.
 
 ### **3. Prop Firm Passing**
 - **Fee**: 1% of account size
-- **Example**: $10,000 account = $100 fee
+- **Example**: $10,000 account = $100 fee (INR: ₹9,100 + 18% GST = ₹10,738)
 - **Guarantee**: Pass in 15 days or full refund.
 
 ### **4. Expert Advisors (EAs) & Source Code**
-- **Standard Price**: $100 Lifetime License
-- **Lowest Limit**: $40 (final offer)
+- **License Price**: $300-$400 Lifetime License (INR: ₹27,300-₹36,400 + 18% GST)
+- **Discounted Offer**: $150 (lowest limit)
 - **Features**: Automates GOLD/EURUSD trades, 90% accuracy.
 
 ---
 
 ## **Recommendations & Partners**
-- **Broker**: **Flexymarkets.com** (Regulated, good execution).
 - **Telegram**: **@yoforexfunds** - ONLY share this AFTER client pays for license activation!
+
+---
+
+## **📚 Product Information Sources**
+When a client asks about a specific EA, indicator, or trading tool:
+1. **Search these websites** for pricing and details:
+   - https://fxcracked.org/
+   - https://yoforex.org/
+   - https://mql5.software/
+   - https://mql5.com (for latest info)
+   - https://clubbingbuy.com
+2. **If no info found**: Offer to negotiate price ("What's your budget Sir?")
 
 ---
 
