@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-const { initDB, logMessage, getConversationHistory, getAllConversations, getAllMessages, getClientsNeedingPoke } = require('./database');
+const { initDB, logMessage, getConversationHistory, getAllConversations, getAllMessages, getClientsNeedingPoke, incrementPokeCount, resetPokeCount, getPokeCount } = require('./database');
 const { generateReply } = require('./ai');
 const { sendMessage } = require('./wati');
 const rag = require('./rag');
@@ -168,6 +168,9 @@ app.post('/webhook', async (req, res) => {
 
                 // 1. Log User Message
                 await logMessage(whatsappNumber, 'user', text);
+
+                // Reset poke count since user replied
+                await resetPokeCount(whatsappNumber);
 
                 // 2. Load History (Increased limit for better memory)
                 const history = await getConversationHistory(whatsappNumber, 15);
@@ -546,19 +549,29 @@ async function runAutoPoke() {
             }
 
             try {
+                // Check poke count limit
+                const pokeCount = await getPokeCount(client.waId);
+                if (pokeCount >= 10) {
+                    console.log(`[AUTO-POKE] Stopping poke for ${client.waId} (Reached limit of 10)`);
+                    continue;
+                }
+
                 // Get conversation history for context
                 const history = await getConversationHistory(client.waId, 10);
 
                 // Generate personalized poke message
                 const pokeMessage = await generatePokeMessage(client.waId, history);
 
-                console.log(`[AUTO-POKE] Sending to ${client.waId}: ${pokeMessage.substring(0, 50)}...`);
+                console.log(`[AUTO-POKE] Sending to ${client.waId} (Count: ${pokeCount + 1}/10): ${pokeMessage.substring(0, 50)}...`);
 
                 // Log the message
                 await logMessage(client.waId, 'assistant', pokeMessage);
 
                 // Send via WATI
                 await sendMessage(client.waId, pokeMessage);
+
+                // Increment poke count
+                await incrementPokeCount(client.waId);
 
                 // Broadcast to dashboard
                 const liveData = JSON.stringify({ from: client.waId, text: '[AUTO-POKE]', reply: pokeMessage });

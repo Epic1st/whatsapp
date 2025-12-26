@@ -28,6 +28,12 @@ async function initDB() {
             message_id TEXT PRIMARY KEY,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS poke_counts (
+            whatsapp_number TEXT PRIMARY KEY,
+            poke_count INTEGER DEFAULT 0,
+            last_poke DATETIME
+        );
     `);
 
     // Create knowledge base table (optional, if we want to move from file to DB later)
@@ -41,6 +47,31 @@ async function initDB() {
 
     console.log('Database initialized');
     return db;
+}
+
+// Increment poke count for a user
+async function incrementPokeCount(number) {
+    const database = await initDB();
+    await database.run(`
+        INSERT INTO poke_counts (whatsapp_number, poke_count, last_poke) 
+        VALUES (?, 1, datetime('now'))
+        ON CONFLICT(whatsapp_number) DO UPDATE SET 
+            poke_count = poke_count + 1,
+            last_poke = datetime('now')
+    `, number);
+}
+
+// Reset poke count when user replies
+async function resetPokeCount(number) {
+    const database = await initDB();
+    await database.run(`DELETE FROM poke_counts WHERE whatsapp_number = ?`, number);
+}
+
+// Get current poke count for a user
+async function getPokeCount(number) {
+    const database = await initDB();
+    const row = await database.get(`SELECT poke_count FROM poke_counts WHERE whatsapp_number = ?`, number);
+    return row ? row.poke_count : 0;
 }
 
 async function logMessage(number, role, content) {
@@ -116,8 +147,8 @@ async function getClientsNeedingPoke() {
         WHERE 
             -- User initiated conversation within last 24 hours (WATI window still open)
             last_user_msg > datetime('now', '-24 hours')
-            -- But it's been 11+ hours since ANY message (time to poke)
-            AND last_any_msg < datetime('now', '-11 hours')
+            -- But it's been 12+ hours since ANY message (time to poke)
+            AND last_any_msg < datetime('now', '-12 hours')
     `);
     return rows;
 }
@@ -130,5 +161,8 @@ module.exports = {
     getAllMessages,
     getClientsNeedingPoke,
     isMessageProcessed,
-    markMessageProcessed
+    markMessageProcessed,
+    incrementPokeCount,
+    resetPokeCount,
+    getPokeCount
 };
