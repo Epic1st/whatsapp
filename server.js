@@ -19,6 +19,36 @@ try { if (fs.existsSync(excludedFile)) excludedNumbers = new Set(JSON.parse(fs.r
 
 const sseClients = []; // For real-time dashboard updates
 
+// ========== LOG CAPTURE SYSTEM ==========
+const logBuffer = [];
+const MAX_LOGS = 200;
+
+function broadcastLog(type, message) {
+    const entry = { time: new Date().toLocaleTimeString(), type, message };
+    logBuffer.push(entry);
+    if (logBuffer.length > MAX_LOGS) logBuffer.shift();
+
+    // Broadcast to SSE
+    const data = JSON.stringify({ type: 'system_log', ...entry });
+    sseClients.forEach(c => { try { c.res.write(`data: ${data}\n\n`); } catch (e) { } });
+}
+
+// Override console methods to capture logs
+const originalLog = console.log;
+const originalError = console.error;
+
+console.log = function (...args) {
+    const msg = args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');
+    originalLog.apply(console, args);
+    broadcastLog('info', msg);
+};
+
+console.error = function (...args) {
+    const msg = args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');
+    originalError.apply(console, args);
+    broadcastLog('error', msg);
+};
+
 // CONCURRENCY CONTROL - Per-user message queue to handle high load
 const userLocks = new Map(); // { whatsappNumber: Promise }
 
@@ -80,11 +110,19 @@ app.post('/webhook', async (req, res) => {
 
         // ========== EXTRACT MESSAGE DATA ==========
         const waId = body.waId || body.whatsappNumber || body.from || body.sender;
-        const text = body.text || body.message || body.body;
+        let text = body.text || body.message || body.body || '';
         const messageType = body.type || body.messageType || 'text';
         const messageId = body.id || body.messageId || body.whatsappMessageId;
 
-        console.log('Parsed - waId:', waId, 'text:', text, 'type:', messageType, 'msgId:', messageId);
+        // Extract Image URL if present (WATI/WhatsApp usually sends in 'data' or 'url')
+        const imageUrl = (messageType === 'image') ? (body.data || body.url || body.link) : null;
+
+        // If it's an image with no caption, provide default context text
+        if (messageType === 'image' && !text) {
+            text = "Please analyze this image I sent.";
+        }
+
+        console.log('Parsed - waId:', waId, 'text:', text, 'type:', messageType, 'msgId:', messageId, 'img:', imageUrl ? 'YES' : 'NO');
 
         // ========== VALIDATE MESSAGE ==========
         if (!waId || !text) {
@@ -92,9 +130,9 @@ app.post('/webhook', async (req, res) => {
             return res.status(200).send('OK');
         }
 
-        // Skip non-text messages
-        if (messageType && messageType !== 'text') {
-            console.log('Ignored: non-text message type:', messageType);
+        // Skip non-text/non-image messages
+        if (messageType && messageType !== 'text' && messageType !== 'image') {
+            console.log('Ignored: unsupported message type:', messageType);
             return res.status(200).send('OK');
         }
 
@@ -134,8 +172,8 @@ app.post('/webhook', async (req, res) => {
                 // 2. Load History (Increased limit for better memory)
                 const history = await getConversationHistory(whatsappNumber, 15);
 
-                // 3. Generate AI Reply (now returns object with RAG info)
-                const aiResult = await generateReply(text, history);
+                // 3. Generate AI Reply (now returns object with RAG info) - PASS IMAGE URL
+                const aiResult = await generateReply(text, history, imageUrl);
                 const aiReply = typeof aiResult === 'object' ? aiResult.text : aiResult;
                 console.log('>>> AI Reply for', whatsappNumber, ':', aiReply.substring(0, 50) + '...');
                 if (aiResult.ragUsed) console.log('[RAG] Context used:', aiResult.ragChunks?.length, 'chunks');
@@ -355,7 +393,7 @@ app.post('/api/test-ai', async (req, res) => {
             query,
             reply: aiReply,
             duration: `${duration}ms`,
-            model: process.env.OPENROUTER_MODEL || 'google/gemini-pro',
+            model: process.env.XAI_MODEL || 'grok-4-1-fast-reasoning',
             ragUsed,
             ragChunks
         });
@@ -453,6 +491,11 @@ app.get('/api/sync-status', (req, res) => {
     } catch (e) {
         res.json({ lastSync: null });
     }
+});
+
+// Get Server Logs
+app.get('/api/logs', (req, res) => {
+    res.json(logBuffer);
 });
 
 // ========== AUTO-POKE KEEP-ALIVE SYSTEM ==========
