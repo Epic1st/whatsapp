@@ -6,30 +6,45 @@
 const fs = require('fs');
 const path = require('path');
 
-// Path to RAG chunks file
-const RAG_DATA_PATH = path.join(__dirname, 'Chat Data for traning AI Model and Knowledgebase', 'rag_chunks.json');
+// Paths to check for RAG chunks (production vs local)
+const CANDIDATE_PATHS = [
+    path.join(__dirname, 'rag_chunks.json'),
+    path.join(__dirname, 'Chat Data for traning AI Model and Knowledgebase', 'rag_chunks.json')
+];
 
 // In-memory store for chunks
 let ragChunks = [];
 let isLoaded = false;
+let loadedPath = '';
 
 /**
  * Load RAG chunks from JSON file into memory
  */
 function loadChunks() {
+    let ragDataPath = null;
+
+    // Find first existing path
+    for (const p of CANDIDATE_PATHS) {
+        if (fs.existsSync(p)) {
+            ragDataPath = p;
+            break;
+        }
+    }
+
     try {
-        if (!fs.existsSync(RAG_DATA_PATH)) {
-            console.log('[RAG] Data file not found:', RAG_DATA_PATH);
+        if (!ragDataPath) {
+            console.log('[RAG] Data file not found in any candidate path');
             return false;
         }
 
         const startTime = Date.now();
-        const data = fs.readFileSync(RAG_DATA_PATH, 'utf8');
+        const data = fs.readFileSync(ragDataPath, 'utf8');
         ragChunks = JSON.parse(data);
         isLoaded = true;
+        loadedPath = ragDataPath;
 
         const duration = Date.now() - startTime;
-        console.log(`[RAG] Loaded ${ragChunks.length} chunks in ${duration}ms`);
+        console.log(`[RAG] Loaded ${ragChunks.length} chunks in ${duration}ms from ${ragDataPath}`);
         return true;
     } catch (error) {
         console.error('[RAG] Error loading chunks:', error.message);
@@ -44,7 +59,7 @@ function getStatus() {
     return {
         isLoaded,
         chunkCount: ragChunks.length,
-        dataPath: RAG_DATA_PATH
+        dataPath: loadedPath
     };
 }
 
