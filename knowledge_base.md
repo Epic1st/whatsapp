@@ -20,6 +20,15 @@
     4. **ID Proof**
 - **Process**: Collect Data → Generate Invoice (Manual) → Send Payment Link/Bank Details.
 
+### **4. Source Code & Decompile Service (EX4/EX5/MQL)**
+- **Service**: Unlocking/Decompiling robot/indicator files or building custom code.
+- **Workflow (STRICT)**:
+  1. **User Request**: "I need source code / decompile this."
+  2. **Requirement**: Ask user to **SEND THE FILE** on WhatsApp first.
+  3. **Referral**: Once file is received (or user confirms sending), send link: `https://t.me/YoForexFunds`.
+  4. **Quote**: "Our engineer will check the file and quote you there."
+- **Price**: DO NOT QUOTE HERE. Price depends on complexity.
+
 ---
 
 ## **🏧 PAYMENT - BE PROACTIVE!**
